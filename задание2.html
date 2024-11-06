@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расчёт расстояния между городами</title>
+    <script>
+        // Функция для расчета расстояния между двумя точками по формуле Haversine
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Радиус Земли в километрах
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                      Math.cos(phi1) * Math.cos(phi2) *
+                      Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // Расстояние в километрах
+            return distance;
+        }
+
+        // Функция для получения координат города через OpenCage Geocoding API
+        async function getCityCoordinates(city) {
+            const apiKey = 'd67467ef203c4c3d8ed4ca9fa5813f2e'; // Замените на ваш ключ API
+            const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(city)}&key=${apiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.results.length > 0) {
+                const coordinates = data.results[0].geometry;
+                return { lat: coordinates.lat, lon: coordinates.lng };
+            } else {
+                throw new Error('Город не найден');
+            }
+        }
+
+        // Функция для расчёта расстояния между двумя городами
+        async function calculateCitiesDistance() {
+            const city1 = document.getElementById('city1').value;
+            const city2 = document.getElementById('city2').value;
+
+            try {
+                // Получаем координаты городов
+                const coords1 = await getCityCoordinates(city1);
+                const coords2 = await getCityCoordinates(city2);
+
+                // Расчитываем расстояние
+                const distance = calculateDistance(coords1.lat, coords1.lon, coords2.lat, coords2.lon);
+                document.getElementById('result').textContent = `Расстояние между ${city1} и ${city2}: ${distance.toFixed(2)} км`;
+            } catch (error) {
+                document.getElementById('result').textContent = `Ошибка: ${error.message}`;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Расчёт расстояния между городами</h1>
+    <label for="city1">Город 1:</label>
+    <input type="text" id="city1" placeholder="Введите название города" required>
+    <br>
+    <label for="city2">Город 2:</label>
+    <input type="text" id="city2" placeholder="Введите название города" required>
+    <br><br>
+    <button onclick="calculateCitiesDistance()">Рассчитать расстояние</button>
+    <p id="result"></p>
+</body>
+</html>
